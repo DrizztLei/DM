@@ -1,0 +1,157 @@
+val rawblocks = sc.textFile("linkage")
+
+val rdd = sc.parallelize(Array)(1, 2, 3, 4), 4)
+
+rawblocks.first
+
+val head = rawblocks.take(10)
+
+head.length
+
+rdd.count()
+rdd.collect() // 返回一个包含　RDD 中所有对象的 Array
+
+head.foreach(println)
+
+def isHeader(line: String) = line.contains("id_1")
+
+def isHeader(line:String): Boolean =
+{
+  line.contains("id_1")
+}
+
+head.filter(isHeader).foreach(println)
+
+head.filter(x => !isHeader(x)).length
+
+head.filter(!isHeader(_)).length
+
+val noheader = rawblocks.filter(x => !isHeader(x))
+
+val line = head(5)
+
+val pieces = line.split(',')
+
+val id1 = pieces(0).toInt
+val id2 = pieces(1).toInt
+
+
+
+val matched = pieces(11).toBoolean
+
+val rawscores = pieces.slice(2, 11)
+
+// rawscores.map(s => s.toDouble)
+
+def toDouble(s: String) =
+{
+  if("?".equals(s)) Double.NaN else s.toDouble
+}
+
+val scores = rawscores.map(toDouble)
+
+def parse(line:String ) =
+{
+  val pieces = line.split(",")
+  val id1 = pieces(0).toInt
+  val id2 = pieces(1).toInt
+  val scores = pieces.slice(2, 11).map(toDouble)
+
+  val matched = pieces(11).toBoolean
+  (id1, id2, scores, matched)
+}
+
+// case class 可以根据名称而不是下标访问
+
+case class MatchData(id1:Int, id2:Int, score:Array)[Double], matched:Boolean)
+
+def parse(line: String) =
+{
+  val pieces = line.split(',')
+
+  val id1 = pieces(0).toInt
+  val id2 = pieces(1).toInt
+
+  val score = pieces.slice(2, 11).map(toDouble)
+  val matched = pieces(11).toBoolean
+
+  MatchData(id1, id2, scores, matched)
+}
+
+val md = parse(line)
+
+md.matched
+md.id1
+
+val mds = head.filter(x => !isHeader(x)).map(x => parse(x))
+
+val parsed = noheader.map(line => parse(line))
+
+调用 cache 方法, 可以指示　在内存中换从某个 RDD, 现在 parsed 可以检测
+
+parsed.cache()
+
+cached.cache()
+cacehe.count()
+cache.take(10)
+
+val grouped = mds.groupBy(md => md.matched)
+
+grouped.mapValues(x => x.size).foreach(println)
+
+
+val matchCounts = parsed.map(md => md.matched).countByValue()
+
+val matchCountsSeq = matchCounts.toSeq
+
+matchCountsSeq.sortBy(_._1).foreach(println)
+parsed.map(md => md.scores(0)).stats()
+
+import java.lang.Double.isNaN
+
+parsed.map(md => md.scores(0)).filter(!isNaN()).stats()
+
+import org.apache.spark.util.StatCounter
+
+class NAStatCounter extends Serializable
+{
+  val stats: StatCounter = new StatCounter()
+  var missing:Long = 0
+
+  def add(x: Double):NAStatCounter =
+  {
+    if (java.lang.Double.isNaN(x))
+    {
+      missing += 1
+    }
+    else
+    {
+      stats.merge(x)
+    }
+    this
+  }
+
+  def merge(other: NAStatCounter): NAStatCounter =
+  {
+    stats.merge(other.stats)
+    missing += other.missing
+    this
+  }
+
+  override def toString =
+  {
+    "Stats: " + stats.toString + " NaN : " + missing
+  }
+}
+
+object NAStatCounter extends Serializable
+{
+  def apply(x: Double) = new NAStatCounter().add(x)
+}
+
+
+val nastats = NAStatCounter.apply(1234)
+val nastats = NAStatCounter(1234)
+
+spark shell:
+    load StatsWithMissing.scala
